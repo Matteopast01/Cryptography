@@ -1,0 +1,55 @@
+load "assignment5_variables.magma";
+
+function FactorsFromD(n,e,d)
+
+R := Integers(n);
+x := random {a: a in R | GCD(a,n) eq 1};
+
+//check dei valori inseriti di e ed d, non conoscendo phi(n) non possiamo verificare e*d=1 mod phi(n)
+if x^(e*d) ne x then
+	return "i valori della chiave privata d e/o della chiave pubblica e inseriti non sono corretti";
+end if;
+
+//calcolo del valore k multiplo di phi(n)
+k := (e*d)-1;
+p:=k;
+t:=0;
+
+//calcolo di t | k=(2^t)*oddnumber without using Factorization(k)
+while (IsEven(p)) do 
+p := Integers()!(p/2);
+t:= t+1;
+end while;
+
+ended := false;
+
+while ended ne true do 
+
+//scelta dell'elemento random per la sequenza
+	randomElement := random {a: a in R | GCD(a,n) eq 1};
+
+	for i in [0..t-1] do
+
+		yi := randomElement ^ (Integers()!(k/(2^i)));
+		
+		nextyi := randomElement ^ (Integers()!(k/(2^(i+1))));
+
+		if (nextyi ne 1) then 
+
+		    p := GCD(Integers()!(nextyi+1),n);
+		    
+		    q := Integers()!(n/p);
+		   
+		   //p e q trovati non devono essere n e 1 (soluzioni banali della fattorizzazione)
+		  	if (p ne n and p ne 1 and q ne n and q ne  1) then
+			    ended := true;
+			    return p, q;
+		    end if;
+
+		end if;
+
+	end for;
+
+end while;
+
+end function;

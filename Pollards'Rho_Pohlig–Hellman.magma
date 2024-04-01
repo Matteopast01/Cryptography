@@ -1,0 +1,273 @@
+//ALGORITMO POLLARD'S RHO:
+
+/* 
+funzione che restituisce uno tra S1,S2,S3:
+x elemento del gruppo, p ordine del gruppo. 
+*/
+function whichArea (x,p)
+
+//ultimo valore di S1
+BoundaryS1 := (p-p mod 3)/3;
+
+//ultimo valore di S2
+BoundaryS2 := ((p-p mod 3)/3)*2;
+
+if x le BoundaryS1 then
+return 1;   
+end if;
+
+if x le BoundaryS2 then
+return 2;   
+end if;
+
+return 3;
+
+end function;
+
+
+/* 
+funzione F dell'algoritmo di Pollard's Rho
+che calcola i valori aggiornati di x e degli esponenti a e b.
+*/
+function F(x,a,b,h,g,p,order)
+
+h := Integers()!h;
+g := Integers()!g;
+x := Integers()!x;
+
+Area := whichArea(x,p-1);
+
+if Area eq 1 then 
+x := h*x mod (p);
+b := b+1 mod order;
+end if;
+
+if Area eq 2 then 
+x := x*x mod (p);
+b := 2*b mod order;
+a := 2*a mod order;
+end if;
+
+if Area eq 3 then 
+x := g*x mod (p);
+a := a+1 mod order;
+end if;
+
+return x,a,b;
+
+end function;
+
+
+/* 
+funzione che restituisce il dlog calcolato: in input ci sono 
+gli esponenti di g ed h risultanti dal match di x_i e x_2i
+ */
+function computeLog(a_i, b_i, a_2i, b_2i, order,g,h)
+    
+a := (a_i - a_2i) mod order;
+b := (b_2i - b_i) mod order; 
+
+d, s, t := XGCD(b,order);
+
+
+/* caso dove d=1, quindi gcd(b,order)=1 ed esiste, dunque,
+ l'unica soluzione di dx=as mod n (il dlog) */
+if d eq 1 then ;
+    sol,_ := Solution(b,1,order); //calcolo della soluzione
+    return Integers()! a*sol mod order; //casting della soluzione in Integers Ring
+end if;
+    
+solutions := [];
+
+/* caso dove d > 1, vengono calcolate le molteplici soluzioni
+ dell'equazione dx=as mod n */
+for i in [1..d] do
+    y := Integers()! ((((a*s))/d) + ((i-1)*order)/d) mod order;
+    solutions := Append(solutions,y);
+end for;
+
+/*prova di tutti gli esponenti di Rho trovati (soluzioni
+ dell'equazione precedente), uno di questi è il dlog. */
+for element  in solutions do
+    if  g^element eq h  then
+        return element;
+    end if;
+end for;
+        
+//se siamo arrivati a questo punto nessun dlog è stato trovato        
+return ("Nessun dlog trovato");
+    
+end function;
+
+
+/*
+funzione principale: p primo del gruppo Z_p*,
+g generatore del gruppo (o di qualche sottogruppo) castato in Integers(p),
+h argomento del log castato in Integers(p). 
+*/
+function PollardsRho (p,g,h)
+      
+
+//g generata tutto il gruppo con ordine p-1 (generatore Z*_p)
+if IsPrimitive(g) then 
+    order := p-1;
+
+// g genera un sottogruppo di Z*_p;
+ else 
+    order := Order(g);
+end if;
+
+//valori iniziali 
+x_i := 1;
+a_i := 0;
+b_i := 0;
+x_2i := 1;
+a_2i := 0;
+b_2i := 0;
+matched := false;
+    
+//ciclo while che viene eseguito fino a quando non si trova il match di x_i e x_2i
+while ((not matched) eq true) do 
+    
+x_i,a_i,b_i,_,_,_ := F(x_i,a_i,b_i,h,g,p,order); 
+    
+x_2i,a_2i,b_2i,_,_,_:= F(x_2i,a_2i,b_2i,h,g,p,order);
+x_2i,a_2i,b_2i,_,_,_ := F(x_2i,a_2i,b_2i,h,g,p,order);
+
+if (x_i eq x_2i) then 
+    matched := true;
+end if;
+
+end while;
+
+return computeLog(a_i,b_i,a_2i,b_2i,order,g,h);
+ 
+end function;
+
+
+
+//ALGORITMO POHLIG-HELLMAN I:
+
+
+/*
+funzione psi dell'algoritmo: h argomento del dlog, 
+generators contiene la lista dei generatori dei sottogruppi
+products contiene l'esponente del generatore g con cui 
+si ottiene il sottogruppo ((11^5)*2 per esempio nel caso in cui 
+il generatore del sottogruppo sia g^((11^5)*2).
+*/
+function psi (h, generators,products)
+
+subChallenges := [];
+
+//creazione dei nuovi argomenti dei logaritmi dei sottogruppi 
+for i in [1..(#generators)] do
+    subChallenges := Append(subChallenges, h^(Integers()!products[i]));
+end for;
+
+return subChallenges;
+
+end function;
+
+
+/* 
+funzione che calcola i dlogs dei sottogruppi:
+p è il valore di Z*_p
+generators contiene la lista dei generatori dei sottogruppi
+subChallenges contiene la lista degli argomenti dei logaritmi dei sottogruppi
+*/
+function computeDlogs (p, generators, subChallenges)
+
+dlogs:=[];
+
+/* 
+calcolo del dlog in ogni sottogruppo con 
+l'algoritmo di Pollard's Rho implementato sopra
+*/
+for i in [1..(#subChallenges)] do
+    dlog := PollardsRho(p, generators[i], subChallenges[i]);
+    dlogs := Append( dlogs, dlog);
+end for;
+
+return dlogs;
+
+end function;
+
+
+/*
+funzione f^-1 del Chinese Remainder Theorem che trova il dlog 
+del gruppo in input alla funzione mydLog
+*/
+function CRTsolver(dlogs,generators)
+
+Orders:=[];
+
+for element in generators do 
+  Orders:=Append(Orders,Order(element));
+
+end for;
+
+return CRT(dlogs,Orders);
+
+end function;
+
+
+/*funzione principale che usa PH1 per calcolare il dlog in un gruppo,dove:
+p è un numero primo del gruppo Z*_p, 
+g generatore del gruppo (o di qualche sottogruppo),
+h argomento del logaritmo
+*/
+function mydLog(g,h,p)
+
+if (IsPrime(p) ne true) then 
+    return("p non è prime");
+end if;
+
+g := Integers(p)!g;
+h := Integers(p)!h;
+
+/*
+se g non genera Z*_p allora genera qualche sottogruppo 
+*/
+if IsPrimitive(g) ne true then
+    order := Order(g);
+else 
+    order := p-1;
+end if;
+
+factorization := Factorization(order);
+
+/* creazione dei generatori dei sottogruppi H1,H2..... */
+generators := [];
+elements := [];
+products := [];
+
+for i in [1..#factorization] do
+elements := Append (elements,factorization[i][1]^factorization[i][2]);
+end for; 
+
+
+for i in [1..#elements] do
+    prod := 1;
+for j in [1..#elements] do
+    if i ne j then
+        prod := prod * elements[j];
+    end if;
+end for;
+products := Append(products,prod);
+end for;
+
+
+//array contenente i generatori dei sottogruppi
+for element in products do 
+generators := Append(generators,g^element);
+end for;
+
+subChallenges := psi (h,generators,products);
+dlogs:= computeDlogs (p,generators,subChallenges);
+
+print ("Il dlog è:");
+
+return CRTsolver(dlogs,generators);
+
+end function;

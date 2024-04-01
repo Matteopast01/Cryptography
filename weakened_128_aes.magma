@@ -1,0 +1,119 @@
+function AddRoundkey (message, key)
+
+messagePostRoundKey := [];
+	for i in [1..#message] do 
+
+		messagePostRoundKey := Append(messagePostRoundKey, ((Integers()! message[i]+ Integers()!key[i]) mod 2));
+
+	end for;
+
+return messagePostRoundKey;
+
+end function;
+
+
+function ShiftRows (message)
+messagePostshiftRows := [];
+
+messagePostshiftRows := messagePostshiftRows cat message[1..32];
+messagePostshiftRows := messagePostshiftRows cat message[41..48];
+messagePostshiftRows := messagePostshiftRows cat message[49..56];
+messagePostshiftRows := messagePostshiftRows cat message[57..64];
+messagePostshiftRows := messagePostshiftRows cat message[33..40];
+messagePostshiftRows := messagePostshiftRows cat message[81..88];
+messagePostshiftRows := messagePostshiftRows cat message[89..96];
+messagePostshiftRows := messagePostshiftRows cat message[65..72];
+messagePostshiftRows := messagePostshiftRows cat message[73..80];
+messagePostshiftRows := messagePostshiftRows cat message[121..128];
+messagePostshiftRows := messagePostshiftRows cat message[97..104];
+messagePostshiftRows := messagePostshiftRows cat message[105..112];
+messagePostshiftRows := messagePostshiftRows cat message[113..120];
+
+return messagePostshiftRows;
+end function;
+
+
+
+//implementazione della Sbox con la definzione
+function S (byte ) 
+
+A := Matrix(8, 8, [[1, 0, 0, 0, 1, 1, 1, 1],[1, 1, 0, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 0, 1, 1],[1, 1, 1, 1, 0, 0, 0, 1], [1, 1, 1, 1, 1, 0, 0, 0], [0, 1, 1, 1, 1, 1, 0, 0], [0, 0, 1, 1, 1, 1, 1, 0],[0, 0, 0, 1, 1, 1, 1, 1]]);
+B := Matrix ([[1],[1],[0],[0],[0],[1],[1],[0]]);
+P<x> := PolynomialRing(GF(2));
+g:= x^8 + x^4 + x^3 + x +1;
+
+poly:= P! Reverse(Eltseq(byte));
+_,inverse:=XGCD(poly,g);
+list := Eltseq(inverse);
+
+if #list lt 8 then 
+
+	for i in [1..(8-#list)] do 
+
+		list := Append (list , 0);
+
+	end for;
+end if;
+
+v:= Matrix(Integers(),Vector(list));
+v:= Transpose(v);
+c:= A*v + B;
+ris := P!Eltseq(c);
+ris := Eltseq(ris);
+
+if #ris lt 8 then 
+
+	for i in [1..(8-#ris)] do 
+
+		ris := Append (ris , 0);
+
+	end for;
+end if;
+return Reverse(ris); 
+
+end function;
+
+
+function SubBytes(message)
+
+messagePostSubBytes := [];
+
+for i in [1..128 by 8] do
+
+	messageCopy:= [];
+    
+    for j in [i..i+7] do
+    	messageCopy := Append (messageCopy, message[j]);
+        
+    end for;
+
+    messagePostSubBytes:= messagePostSubBytes cat S(messageCopy);
+
+end for;
+
+return messagePostSubBytes;
+end function;
+
+
+function Round(message, key)
+messagePostSubBytes := SubBytes(message);
+messagePostshiftRows := ShiftRows(messagePostSubBytes);
+messagePostRoundKey := AddRoundkey(messagePostshiftRows,key);
+return messagePostRoundKey;
+
+end function;
+
+
+function weakenedAES(message,key)
+
+message:= Eltseq (message);
+key:= Eltseq (key);
+
+
+for i in [1..4] do 
+	message := Round(message,key);
+end for;
+
+return message;
+
+end function;

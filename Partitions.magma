@@ -1,0 +1,30 @@
+function counterEquals(List)
+max_counter:=0;
+for element in List do
+ counter := 0;
+ for subElement in List do 
+ if element eq subElement then 
+ counter := counter + 1;
+ end if;
+ end for;
+ if counter gt max_counter then
+ max_counter := counter;
+ end if;
+end for;
+return max_counter;
+end function;
+
+
+
+function filteredPartitions(n,t)
+	partitions:= Partitions(n);
+	for partition in partitions do
+	if (counterEquals(partition) gt t) then
+	index :=Index(partitions, partition);
+	Remove(~partitions,index);
+        end if;
+	end for;
+        print ("Il numero di partizioni è: ");
+	print (#partitions);
+	return partitions;
+	end function;

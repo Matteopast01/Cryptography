@@ -1,0 +1,64 @@
+
+// function recommended in the Assigment;
+function systemSolver(a, b, s, t)
+	
+	_, alpha, beta := XGCD(s,t);
+	x := (alpha*b*s + beta*a*t) mod (s*t);
+	
+	return x,s*t;
+
+end function;
+
+
+// CRTsolver definition, L list of integers, M list of pairwise coprime
+function CRTsolver(L, M)
+
+	// testing that L and M have the same size 
+	if #L ne #M then return "Error: the lists have not the same length";
+	end if;
+
+    m := #L;
+
+    if m eq 1 then 
+    	return L[1] mod M[1];
+    end if;
+
+
+
+	// testing that each element of L is >= 0 
+	for integer in L do
+		if integer lt 0 or (not IsIntegral(integer))then 
+			return "Error: list L must contain integer greater or equal than zero";
+		end if;
+	end for;
+
+
+	// testing that each element of M is > 0
+	for integer in M  do
+		if integer le 0 or (not IsIntegral(integer)) then 
+			return "Error: list M must contain integer greater than zero";
+		end if;
+	end for;
+
+
+	// testing that elements of M are pairwise coprime
+	for i in [1..m-1] do
+		for j in [i+1..m] do
+
+			if not IsCoprime(M[i],M[j]) then return "Error: modules are not pairwise coprime";
+			end if;
+		end for;
+	end for;
+
+    //solving the first two equations of the system 
+	x,n := systemSolver(L[1], L[2], M[1], M[2]);
+
+
+    //solving the whole system
+	for i in [3..m] do
+		x,n := systemSolver(x, L[i], n, M[i]);
+	end for;
+
+return x;
+
+end function;

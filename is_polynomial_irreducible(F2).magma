@@ -1,0 +1,20 @@
+
+//p casted in PolynomialRing
+function testIrreducibility (p) 
+
+degree := Degree(p);
+s := {Parent(p)!Reverse(Eltseq(v)) : v in VectorSpace(GF(2),degree)};
+
+for element in s do
+
+	if (GCD(element,p) ne 1 and GCD(element,p) ne p) then 
+
+		return ("Not irreducible");
+
+	end if;
+
+end for;
+
+return ("Irreducible");
+
+end function;

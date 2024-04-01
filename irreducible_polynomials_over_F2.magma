@@ -1,0 +1,23 @@
+load "task1.magma";
+
+function listIrreds(k)
+
+P<x> := PolynomialRing(GF(2));
+s := { P!Reverse(Eltseq(v)) : v in VectorSpace(GF(2),k+1) | Degree(P!Reverse(Eltseq(v))) eq 4 };
+
+list := [];
+
+for element in s do 
+
+	if testIrreducibility (element) eq "Irreducible" then 
+		list := Append (list, element);
+
+
+	end if;
+
+end for;
+
+return list;
+
+end function;
+
