@@ -1,0 +1,44 @@
+function Sort (a,b)
+if (AbsoluteValue(a) lt AbsoluteValue(b)) then
+AbsoluteA:= AbsoluteValue(b);
+AbsoluteB:= AbsoluteValue(a);
+return AbsoluteA,AbsoluteB;
+end if;
+return AbsoluteValue(a),AbsoluteValue(b);
+end function;
+
+
+function Reduce (a,b)
+if (IsEven(a) and IsOdd(b)) then
+a:=Integers()!(a/2);
+elif(IsOdd(a) and IsEven(b)) then
+b:=Integers()!(b/2);
+elif(IsOdd(a) and IsOdd(b))then
+a:=Integers()!((a-b)/2);
+end if;
+return a,b;
+end function;
+
+
+function binaryGCD(a,b)
+if (a eq 0) then
+return b;
+elif (b eq 0 or a eq b) then
+return a;
+end if;
+i:= 0;
+while (IsEven(a) and IsEven(b)) do
+a := Integers()!(a/2);
+b := Integers()!(b/2);
+i:= i+1;
+end while;
+while not(a eq b) do
+a,b:= Sort(a,b);
+a,b:= Reduce(a,b);
+end while;
+if (i eq 0) then
+return a;
+else
+return (2^i)*a;
+end if;
+end function;
